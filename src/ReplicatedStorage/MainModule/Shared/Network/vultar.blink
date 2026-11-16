@@ -1,0 +1,1421 @@
+option Casing = Pascal
+option ServerOutput = "./Generated/Server.luau"
+option ClientOutput = "./Generated/Client.luau"
+option TypesOutput = "./Generated/Types.luau"
+
+-- Shared types
+
+type PlayerId = f64
+type StatTypeId = i32
+type Timestamp = f64
+
+enum HardpointOwner = { "Defenders", "Hostiles" }
+enum CosmeticCategory = { "PlayerCard", "GunSkin", "ChatGradient" }
+enum SortField = { "Kills", "Damage", "Heals", "Captures", "Total" }
+enum StatType = { "Kills", "Damage", "Heals", "Captures" }
+enum ChannelId = { "GLOBAL", "OFFICER", "HICOM", "RAID", "ROYAL", "DREAD" }
+enum InventoryAction = { "add", "remove", "equip", "unequip", "swap", "full" }
+
+struct Vec2 {
+	X: f32,
+	Y: f32,
+}
+
+enum HardpointControlAction = {
+	"start",
+	"pause",
+	"unpause",
+	"reset",
+	"setMaxPoints",
+	"setRotationRange",
+	"setScores"
+}
+
+enum AnnouncementType = {
+	"RAID_STARTING",
+	"RAID_STARTED",
+	"TERMINAL_CAPTURED",
+	"LEAD_TAKEN",
+	"ROTATION_WARNING",
+	"TERMINAL_ROTATED",
+	"DEFENDERS_WON",
+	"HOSTILES_WON"
+}
+
+struct PlayerStats {
+	Kills: i32,
+	Damage: i32,
+	Heals: i32,
+	Captures: i32,
+}
+
+struct LeaderboardEntry {
+	UserId: PlayerId,
+	DisplayName: string,
+	Username: string,
+	Team: string?,
+	Stats: PlayerStats,
+	CardImageId: string?,
+	IsAnimatedCard: boolean?,
+}
+
+struct HitLogEntry {
+	attackerId: PlayerId,
+	bodyPart: u8,
+	localX: f32,
+	localY: f32,
+	localZ: f32,
+	damage: f32,
+	gunIndex: u8,
+	headshot: boolean,
+}
+
+struct OutgoingHitEntry {
+	targetId: PlayerId,
+	damage: f32,
+	gunIndex: u8,
+	headshot: boolean,
+}
+
+struct KillLogData {
+	hitLog: HitLogEntry[0..100]?,
+	outgoingLog: OutgoingHitEntry[0..100]?,
+	accuracy: f32?,
+	matchAccuracy: f32?,
+}
+
+struct DeathData {
+	killerUserId: PlayerId,
+	killerName: string,
+	gunName: string,
+	range: f32,
+	killerHealth: f32,
+	playerCardImage: string?,
+	isAnimatedCard: boolean?,
+	wasReset: boolean,
+	hasKillLog: boolean,
+}
+
+struct HighlightTarget {
+	userId: PlayerId,
+	characterName: string,
+}
+
+struct PingData {
+	position: vector,
+	senderName: string,
+	isSpecial: boolean,
+	targets: HighlightTarget[0..50],
+}
+
+struct GradientConfig {
+	colors: Color3[0..10],
+	rotation: f32?,
+}
+
+struct TeamChangeResult {
+	success: boolean,
+	team: string?,
+	error: string?,
+}
+
+struct LogSubmitResult {
+	success: boolean,
+	error: string?,
+}
+
+struct LogPlayer {
+	name: string,
+	userId: PlayerId,
+	timeInServer: f64,
+}
+
+struct PlayerGlobalStats {
+	Kills: i32,
+	Damage: i32,
+	Heals: i32,
+	Caps: i32,
+	GamesPlayed: i32,
+	GamesWon: i32,
+	MVP: i32,
+}
+
+struct ClassSelectResult {
+	success: boolean,
+	error: string?,
+	className: string?,
+}
+
+struct ClassSlotData {
+	current: u8,
+	max: u8,
+	players: string[0..50],
+}
+
+struct ExportResult {
+	success: boolean,
+	code: string?,
+}
+
+struct ImportResult {
+	success: boolean,
+	settings: unknown?,
+	error: string?,
+}
+
+struct HardpointState {
+	Official: boolean,
+	Paused: boolean,
+	CountingDown: boolean,
+	DefenderScore: i32,
+	HostileScore: i32,
+	MaxPoints: i32,
+	CurrentPoint: u8,
+	CurrentPointName: string?,
+	Owner: HardpointOwner?,
+	TimeToRotate: f32,
+	RotationTimeMin: f32,
+	RotationTimeMax: f32,
+}
+
+struct HardpointAnnouncement {
+	Type: AnnouncementType,
+	Message: string,
+	Team: HardpointOwner?,
+	Countdown: f32?,
+}
+
+struct HardpointControlPayload {
+	action: HardpointControlAction,
+	maxPoints: i32?,
+	rotationMin: f32?,
+	rotationMax: f32?,
+	defenderScore: i32?,
+	hostileScore: i32?,
+}
+
+struct TerminalPermissions {
+	HasAccess: boolean,
+	IsPrivateServer: boolean,
+	IsOwner: boolean,
+}
+
+struct TopPlayer {
+	UserId: PlayerId,
+	DisplayName: string,
+	Value: i32,
+}
+
+struct TeamTopPlayers {
+	Kills: TopPlayer?,
+	Damage: TopPlayer?,
+	Heals: TopPlayer?,
+}
+
+struct VictoryData {
+	WinningTeam: string,
+	DefenderTopPlayers: TeamTopPlayers,
+	HostileTopPlayers: TeamTopPlayers,
+	DefenderScore: i32,
+	HostileScore: i32,
+}
+
+struct ChatMessage {
+	id: string,
+	channelId: ChannelId,
+	senderId: PlayerId,
+	senderName: string,
+	senderDisplayName: string,
+	content: string,
+	timestamp: f64,
+	tags: string[0..10],
+	nameColor: Color3?,
+	rolePrefix: string?,
+	roleColor: Color3?,
+	isSystem: boolean?,
+	isTeamOnly: boolean?,
+	senderTeam: string?,
+	isWhisper: boolean?,
+	whisperTargetId: PlayerId?,
+	whisperTargetName: string?,
+	gradient: GradientConfig?,
+}
+
+struct PlayerChatData {
+	visibleChannels: ChannelId[0..6],
+	tags: string[0..10],
+	nameColor: Color3?,
+	rolePrefix: string?,
+	roleColor: Color3?,
+	isRaidLeader: boolean,
+}
+
+struct ChatPlayerMeta {
+	userId: PlayerId,
+	bubbleEveryone: boolean,
+	tags: string[0..10],
+	nameColor: Color3?,
+	rolePrefix: string?,
+	roleColor: Color3?,
+	gradient: GradientConfig?,
+}
+
+struct SystemMessage {
+	channelId: ChannelId?,
+	content: string,
+	color: Color3?,
+}
+
+struct StatsUpdateData {
+	statType: string,
+	amount: i32,
+	newValue: i32,
+}
+
+struct StatDeltaEntry {
+	userId: PlayerId,
+	statType: u8,
+	value: i32,
+}
+
+struct GunHitEntry {
+	targetId: PlayerId,
+	damage: f32,
+	head: boolean,
+	pos: vector,
+	bodyPart: u8,
+}
+
+struct GunHealEntry {
+	targetId: PlayerId,
+	healAmount: f32,
+	pos: vector,
+}
+
+struct KillData {
+	killer: PlayerId,
+	victim: PlayerId,
+	headshot: boolean,
+	weapon: u8,
+	killerHealth: u32,
+}
+
+struct ShotReplicate {
+	origin: vector,
+	target: vector,
+	gunIndex: u8,
+}
+
+struct ShotReplicateBatch {
+	origin: vector,
+	target: vector,
+	gunIndex: u8,
+	shooterId: PlayerId,
+}
+
+enum ProgressData = "Type" {
+	Number { value: f32 },
+	Text { value: string },
+}
+
+-- ============================================
+-- Scope: Loading
+-- ============================================
+scope Loading {
+	event Ready {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+}
+
+-- ============================================
+-- Scope: Deploy
+-- ============================================
+scope Deploy {
+	event Request {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+
+	event Complete {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+}
+
+-- ============================================
+-- Scope: Credits
+-- ============================================
+scope Credits {
+	event Request {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+
+	event Toggle {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: boolean,
+	}
+}
+
+-- ============================================
+-- Scope: Death
+-- ============================================
+scope Death {
+	event Data {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: DeathData,
+	}
+
+	event RespawnReady {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+
+	function RequestKillLog {
+		Yield: Coroutine,
+		Return: KillLogData?,
+	}
+}
+
+-- ============================================
+-- Scope: Ping
+-- ============================================
+scope Ping {
+	event Send {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: vector,
+	}
+
+	event Highlight {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: PingData,
+	}
+
+	event Notify {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (string, f32),
+	}
+}
+
+-- ============================================
+-- Scope: Diagnostics
+-- ============================================
+scope Diagnostics {
+	event RequestDump {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+
+	event SubmitDump {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: unknown,
+	}
+}
+
+-- ============================================
+-- Scope: Camera
+-- ============================================
+scope Camera {
+	function GetData {
+		Yield: Coroutine,
+		Return: CFrame,
+	}
+}
+
+-- ============================================
+-- Scope: Teams
+-- ============================================
+scope Teams {
+	function ChangeTeam {
+		Yield: Coroutine,
+		Data: string,
+		Return: TeamChangeResult,
+	}
+
+	function GetCurrentTeam {
+		Yield: Coroutine,
+		Return: string?,
+	}
+}
+
+-- ============================================
+-- Scope: Logging
+-- ============================================
+scope Logging {
+	function SubmitLog {
+		Yield: Coroutine,
+		Data: string[0..50],
+		Return: LogSubmitResult,
+	}
+
+	function GetPlayers {
+		Yield: Coroutine,
+		Return: LogPlayer[0..100],
+	}
+}
+
+-- ============================================
+-- Scope: GlobalStats
+-- ============================================
+scope GlobalStats {
+	function GetPlayerStats {
+		Yield: Coroutine,
+		Data: PlayerId,
+		Return: PlayerGlobalStats?,
+	}
+}
+
+-- ============================================
+-- Scope: Class
+-- ============================================
+scope Class {
+	function Select {
+		Yield: Coroutine,
+		Data: string,
+		Return: ClassSelectResult,
+	}
+
+	function GetSlots {
+		Yield: Coroutine,
+		Return: unknown,
+	}
+
+	function GetPlayerClass {
+		Yield: Coroutine,
+		Return: string?,
+	}
+
+	event SlotsUpdate {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (string, unknown),
+	}
+}
+
+-- ============================================
+-- Scope: Cosmetic
+-- ============================================
+scope Cosmetic {
+	function GetState {
+		Yield: Coroutine,
+		Return: unknown,
+	}
+
+	function Equip {
+		Yield: Coroutine,
+		Data: (CosmeticCategory, string),
+		Return: boolean,
+	}
+
+	function Unequip {
+		Yield: Coroutine,
+		Data: CosmeticCategory,
+		Return: boolean,
+	}
+
+	function RefreshOwnership {
+		Yield: Coroutine,
+		Return: unknown,
+	}
+
+	event StateUpdated {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: unknown,
+	}
+}
+
+-- ============================================
+-- Scope: Inventory
+-- ============================================
+scope Inventory {
+	function GetInventory {
+		Yield: Coroutine,
+		Return: unknown,
+	}
+
+	function EquipSlot {
+		Yield: Coroutine,
+		Data: u8,
+		Return: boolean,
+	}
+
+	function Unequip {
+		Yield: Coroutine,
+		Return: boolean,
+	}
+
+	function SwapSlots {
+		Yield: Coroutine,
+		Data: (u8, u8),
+		Return: boolean,
+	}
+
+	function DropItem {
+		Yield: Coroutine,
+		Data: u8,
+		Return: boolean,
+	}
+
+	event Updated {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: unknown,
+	}
+
+	event EquipOptimistic {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: u8,
+	}
+
+	event UnequipOptimistic {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+}
+
+-- ============================================
+-- Scope: Settings
+-- ============================================
+scope Settings {
+	function GetSettings {
+		Yield: Coroutine,
+		Return: unknown,
+	}
+
+	function ChangeKeybind {
+		Yield: Coroutine,
+		Data: (string, string),
+		Return: string?,
+	}
+
+	function ResetSettings {
+		Yield: Coroutine,
+		Return: unknown,
+	}
+
+	function ExportSettings {
+		Yield: Coroutine,
+		Return: ExportResult,
+	}
+
+	function ImportSettings {
+		Yield: Coroutine,
+		Data: string,
+		Return: ImportResult,
+	}
+
+	function CheckCursor {
+		Yield: Coroutine,
+		Data: f64,
+		Return: f64,
+	}
+
+	event ChangeSetting {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (string, unknown),
+	}
+}
+
+-- ============================================
+-- Scope: Stats
+-- ============================================
+scope Stats {
+	function GetStats {
+		Yield: Coroutine,
+		Return: PlayerStats?,
+	}
+
+	function GetPlayerStats {
+		Yield: Coroutine,
+		Data: PlayerId,
+		Return: PlayerStats?,
+	}
+
+	function GetLeaderboard {
+		Yield: Coroutine,
+		Data: SortField,
+		Return: unknown,
+	}
+
+	event Updated {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: unknown,
+	}
+
+	event Delta {
+		From: Server,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: (PlayerId, StatTypeId, i32),
+	}
+
+	event DeltaBatch {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: StatDeltaEntry[0..50],
+	}
+}
+
+-- ============================================
+-- Scope: Progress
+-- ============================================
+scope Progress {
+	event Update {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ProgressData,
+	}
+}
+
+-- ============================================
+-- Scope: Hardpoint
+-- ============================================
+scope Hardpoint {
+	event Update {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: HardpointState,
+	}
+
+	event Announcement {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: HardpointAnnouncement,
+	}
+
+	event TerminalVisual {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (string, string, Color3?),
+	}
+
+	event Control {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: HardpointControlPayload,
+	}
+
+	event Victory {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: VictoryData,
+	}
+
+	function GetPermissions {
+		Yield: Coroutine,
+		Return: TerminalPermissions,
+	}
+
+	function GetState {
+		Yield: Coroutine,
+		Return: HardpointState,
+	}
+}
+
+-- ============================================
+-- Scope: Chat
+-- ============================================
+scope Chat {
+	event SwitchChannel {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ChannelId,
+	}
+
+	event SystemChatMessage {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ChatMessage,
+	}
+
+	event SystemMessage {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: SystemMessage,
+	}
+
+	event SetBubbleVisibility {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: boolean,
+	}
+
+	event MuteStatus {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: boolean,
+	}
+
+	event ChannelsUpdated {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (ChannelId[0..6], ChannelId?),
+	}
+
+	event Command {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: string,
+	}
+
+	event PlayerMeta {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ChatPlayerMeta[0..50],
+	}
+
+	function GetPlayerData {
+		Yield: Coroutine,
+		Return: PlayerChatData,
+	}
+
+	function GetPlayerMeta {
+		Yield: Coroutine,
+		Return: ChatPlayerMeta[0..50],
+	}
+
+	function RequestWhisperChannel {
+		Yield: Coroutine,
+		Data: PlayerId,
+		Return: string?,
+	}
+
+	function GetSystemHistory {
+		Yield: Coroutine,
+		Data: ChannelId,
+		Return: ChatMessage[0..100],
+	}
+}
+
+-- ============================================
+-- Scope: FlagBearer
+-- ============================================
+
+struct FlagBearerAbilityStatus {
+	AuraHealReady: boolean,
+	AuraHealActive: boolean,
+	AuraHealCooldown: f32,
+	ShieldReady: boolean,
+	ShieldActive: boolean,
+	ShieldCooldown: f32,
+}
+
+scope FlagBearer {
+	event State {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: boolean,
+	}
+
+	event ActivateAbility {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: string,
+	}
+
+	event AbilityStatus {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: FlagBearerAbilityStatus,
+	}
+
+	event HealVFX {
+		From: Server,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: PlayerId[0..50],
+	}
+
+	event ShieldSpawn {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (PlayerId, vector, boolean),
+	}
+
+	event ShieldDestroy {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: PlayerId,
+	}
+
+	event ShieldHit {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (PlayerId, f32),
+	}
+}
+
+-- ============================================
+-- Scope: Phase
+-- ============================================
+
+enum PhaseOwner = { "Defenders", "Raiders" }
+
+enum PhaseAnnouncementType = {
+	"RAID_STARTING",
+	"PHASE_TRANSITION",
+	"PHASE_MESSAGE",
+	"OVERTIME",
+	"DEFENDERS_WON",
+	"RAIDERS_WON"
+}
+
+enum ConquestAction = {
+	"UpdateCaptureProgress",
+	"CaptureComplete",
+	"RollbackComplete",
+	"StartHold",
+	"UpdateHoldProgress",
+	"EndHold"
+}
+
+struct PhaseState {
+	Phase: u8,
+	RaidTime: f32,
+	TermTime: f32,
+	Official: boolean,
+	CountingDown: boolean,
+	Owner: PhaseOwner?,
+	PayloadProgress: f32,
+	PayloadMax: f32,
+	Overtime: boolean,
+	ConquestActive: boolean,
+	CaptureProgress: f32,
+	CaptureTeam: PhaseOwner?,
+}
+
+struct PhaseAnnouncement {
+	Type: PhaseAnnouncementType,
+	Message: string,
+	Countdown: f32?,
+}
+
+struct ConquestUpdate {
+	Action: ConquestAction,
+	Node: string,
+	Progress: f32,
+	Duration: f32,
+	Team: PhaseOwner?,
+	Phase: u8,
+	TimeRemaining: f32,
+}
+
+struct TrainMovementData {
+	StartPosition: CFrame,
+	TargetPosition: CFrame,
+	Delay: f32,
+	TravelTime: f32,
+}
+
+struct DoorStateData {
+	DoorName: string,
+	IsOpen: boolean,
+}
+
+enum PhaseControlAction = {
+	"start",
+	"skipPhase",
+	"end",
+	"setTermTime",
+	"setRaidTime"
+}
+
+struct PhaseControlPayload {
+	action: PhaseControlAction,
+	termTime: f32?,
+	raidTime: f32?,
+	winner: string?,
+}
+
+scope Phase {
+	event Update {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: PhaseState,
+	}
+
+	event Announcement {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: PhaseAnnouncement,
+	}
+
+	event Victory {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: VictoryData,
+	}
+
+	event ConquestUi {
+		From: Server,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: ConquestUpdate,
+	}
+
+	event PayloadProgress {
+		From: Server,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: (f32, f32, i8),
+	}
+
+	event TrainMovement {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: TrainMovementData,
+	}
+
+	event DoorState {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: DoorStateData,
+	}
+
+	event Control {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: PhaseControlPayload,
+	}
+
+	function GetState {
+		Yield: Coroutine,
+		Return: PhaseState,
+	}
+
+	function GetPermissions {
+		Yield: Coroutine,
+		Return: TerminalPermissions,
+	}
+}
+
+-- ============================================
+-- Scope: Gun
+-- ============================================
+scope Gun {
+	event ShotHit {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (PlayerId, f32, boolean, vector, u8, u8, vector, vector, f64),
+	}
+
+	event Hits {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (u8, GunHitEntry[0..30], f64),
+	}
+
+	event ReplicateToServer {
+		From: Client,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: ShotReplicate[0..30],
+	}
+
+	event ReplicateToClient {
+		From: Server,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: ShotReplicateBatch[0..64],
+	}
+
+	event Kill {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: KillData,
+	}
+
+	event Heals {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: GunHealEntry[0..20],
+	}
+
+	event MediBeamToServer {
+		From: Client,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: (string, PlayerId?),
+	}
+
+	event MediBeamToClient {
+		From: Server,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: (PlayerId, string, PlayerId?),
+	}
+
+	event LowChargeToServer {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+
+	event LowChargeToClient {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: PlayerId,
+	}
+}
+
+
+
+-- ============================================
+-- Scope: Avatar
+-- ============================================
+scope Avatar {
+	function GetState {
+		Yield: Coroutine,
+		Return: unknown,
+	}
+
+	event ToggleHats {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: boolean,
+	}
+
+	event EquipUniform {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: string,
+	}
+
+	event UnequipUniform {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+
+	event StateUpdated {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: unknown,
+	}
+
+	event SetNoobicSkinColor {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: boolean,
+	}
+
+	event SetTorsoColor {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: u8,
+	}
+}
+
+-- ============================================
+-- Scope: Spar
+-- ============================================
+scope Spar {
+	event SelectOption {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (u8, string, string),
+	}
+
+	event ToggleSetting {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (u8, string),
+	}
+
+	event StartMatch {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: u8,
+	}
+
+	event PadStatus {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: (u8, boolean),
+	}
+}
+
+-- ============================================
+-- Scope: AimChamber
+-- ============================================
+
+enum AimChamberDeathReason = { "Zombie", "EndOnTouch", "LeftMidMatch" }
+
+struct AimChamberSettings {
+	MaxZombies: u8,
+	ZombieSpeed: f32,
+	ZombieDamageEnabled: boolean,
+	ZombieDamageAmount: f32,
+	ZombieSpawnRate: f32,
+	ZombieDodgeInterval: f32,
+	ZombieCrouchChance: f32,
+	AssessmentValidation: boolean,
+	SelectedGun: string,
+}
+
+struct AimChamberConfigState {
+	Settings: AimChamberSettings,
+	ActivePreset: string,
+	Locked: boolean,
+}
+
+struct AimChamberMatchStartPayload {
+	Settings: AimChamberSettings,
+	PresetId: string,
+	GunName: string,
+}
+
+struct AimChamberMatchTick {
+	ElapsedTime: f32,
+}
+
+struct AimChamberValidationPayload {
+	PlayerName: string,
+	UserId: PlayerId,
+	AvatarUrl: string,
+	PresetId: string,
+	Settings: AimChamberSettings,
+	GunName: string,
+	FormattedDateTime: string,
+	DeathReason: AimChamberDeathReason,
+	ElapsedTime: f32,
+	ZombieSpawnRate: f32,
+	AveragePing: f64,
+	MaxPingSpike: f64,
+	BigPingSpikesCount: u16,
+	ViaGroupRank: string,
+}
+
+struct AimChamberMatchEndPayload {
+	DeathReason: AimChamberDeathReason,
+	ElapsedTime: f32,
+	ShowAssessmentUI: boolean,
+	Validation: AimChamberValidationPayload?,
+}
+
+struct AimChamberApplyResult {
+	Success: boolean,
+	Error: string?,
+}
+
+scope AimChamber {
+	event RequestOpenConfig {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+
+	event ConfigStateSync {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: AimChamberConfigState,
+	}
+
+	event ApplyConfig {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: AimChamberSettings,
+	}
+
+	event ApplyConfigResult {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: AimChamberApplyResult,
+	}
+
+	event RequestStartMatch {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+
+	event MatchStarted {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: AimChamberMatchStartPayload,
+	}
+
+	event MatchTick {
+		From: Server,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: AimChamberMatchTick,
+	}
+
+	event MatchEnded {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: AimChamberMatchEndPayload,
+	}
+}
+
+-- ============================================
+-- Scope: Domination
+-- ============================================
+
+enum DominationAnnouncementType = {
+	"RAID_STARTING",
+	"RAID_STARTED",
+	"POINT_CAPTURED",
+	"LEAD_TAKEN",
+	"DEFENDERS_WON",
+	"HOSTILES_WON"
+}
+
+enum DominationControlAction = {
+	"start",
+	"pause",
+	"unpause",
+	"reset",
+	"setMaxScore",
+	"setScores"
+}
+
+struct DominationPointState {
+	Label: string,
+	Owner: HardpointOwner?,
+	Progress: f32,
+	ProgressOwner: HardpointOwner?,
+	Contested: boolean,
+}
+
+struct DominationState {
+	Official: boolean,
+	Paused: boolean,
+	CountingDown: boolean,
+	DefenderScore: i32,
+	HostileScore: i32,
+	MaxScore: i32,
+	Points: DominationPointState[0..26],
+}
+
+struct DominationAnnouncement {
+	Type: DominationAnnouncementType,
+	Message: string,
+	Team: HardpointOwner?,
+	Countdown: f32?,
+}
+
+struct DominationControlPayload {
+	action: DominationControlAction,
+	maxScore: i32?,
+	defenderScore: i32?,
+	hostileScore: i32?,
+}
+
+scope Domination {
+	event Update {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: DominationState,
+	}
+
+	event Announcement {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: DominationAnnouncement,
+	}
+
+	event Victory {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: VictoryData,
+	}
+
+	event Control {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: DominationControlPayload,
+	}
+
+	function GetPermissions {
+		Yield: Coroutine,
+		Return: TerminalPermissions,
+	}
+
+	function GetState {
+		Yield: Coroutine,
+		Return: DominationState,
+	}
+}
+

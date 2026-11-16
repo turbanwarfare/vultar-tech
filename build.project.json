@@ -1,0 +1,15 @@
+{
+  "name": "MainModule",
+  "tree": {
+    "$path": "src/ReplicatedStorage/MainModule",
+    "Packages": {
+      "$path": "Packages",
+      "_Index": {
+        "$path": "Packages/_Index"
+      },
+      "Fusion": {
+        "$path": "vendor/Fusion"
+      }
+    }
+  }
+}

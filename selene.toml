@@ -1,0 +1,7 @@
+std = "roblox"
+
+exclude = ["Packages", "*.spec.lua", "*.spec.luau", "src/ReplicatedStorage/MainModule/Shared/Network/Generated/*"]
+
+[rules]
+unused_variable = "warn"
+shadowing = "warn"

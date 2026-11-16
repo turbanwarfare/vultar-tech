@@ -1,0 +1,133 @@
+--!strict
+--!native
+--!optimize 2
+
+local RunService = game:GetService("RunService")
+
+local Maps = require(script.Parent.Maps)
+
+local Constants = {}
+
+Constants.GROUPS = {
+	VULTAR = 35685173,
+	ROYAL_GUARD = 35685160,
+	DREADTROOPERS = 35685179,
+	VIA = 35685159,
+	VWC = 35685175,
+	VIACOM = 35964919,
+	DOJ = 208017746,
+	VDI = 35685641,
+	FIVE_NSO = 515014792,
+	THREE_ND = 114773725,
+	CBRN_SF = 6053136,
+	CBRN = 5855434,
+	RC = 5352093,
+	GAR = 5214183,
+	ASC = 1013048764,
+	SUBZERO = 32610440,
+	SOB = 32610440,
+	ANRO = 36000077,
+	ANROSOC = 424805153,
+	AETERNUS = 1013048764,
+	GAR_SOB = 35906476,
+	SNOW_CORE = 5665804,
+	VAK = 131688,
+	VAC = 262619,
+}
+
+Constants.RANKS = {
+	GUEST = 0,
+	PRIVATE = 10,
+	PRIVATE_FIRST_CLASS = 20,
+	LANCE_CORPORAL = 30,
+	CORPORAL = 40,
+	SERGEANT = 50,
+	WARRANT_OFFICER = 60,
+	RETIRED = 70,
+	LIEUTENANT = 80,
+	CAPTAIN = 90,
+	MAJOR = 100,
+	LIEUTENANT_COLONEL = 150,
+	COLONEL = 200,
+	GENERAL = 250,
+	DEVELOPER = 254,
+}
+
+Constants.VIA_RANKS = {
+	STAGE_1 = 100,
+	STAGE_2 = 110,
+	STAGE_3 = 120,
+}
+
+Constants.DOJ_RANKS = {
+	SENIOR_JUSTICE = 120,
+}
+
+Constants.MIN_RANK = {
+	ENLISTED = 10,
+	NCO = 50,
+	OFFICER = 80,
+	HIGH_COMMAND = 150,
+	VIACOM_INSTRUCTOR = 150,
+}
+
+Constants.VULTAR_ENDURES = {
+	STANDARD = {
+		color = Color3.fromRGB(255, 68, 68),
+		hex = "FF4444",
+	},
+	ROYAL_GUARD = {
+		color = Color3.fromRGB(185, 158, 20),
+		hex = "B99E14",
+	},
+}
+
+Constants.LOADING = {
+	FADE_TIME = 0.5,
+	BLACKOUT_FADE_TIME = 2,
+	MUSIC_FADE_TIME = 2,
+	DEFAULT_MUSIC_VOLUME = 0.5,
+	PROGRESS_STEP_MIN = 0.025,
+	PROGRESS_STEP_MAX = 0.15,
+	DOTS_INTERVAL = 0.4,
+}
+
+Constants.RETRY = {
+	MAX_ATTEMPTS = 5,
+	INITIAL_DELAY = 0.1,
+	MAX_DELAY = 5,
+	BACKOFF_MULTIPLIER = 2,
+}
+
+Constants.REPLICATION = {
+	BATCH_SIZE = 50,
+	YIELD_INTERVAL = 0.03,
+}
+
+Constants.LOADING_SCREEN_IMAGE = "rbxassetid://0"
+
+Constants.SETTINGS = {
+	BLUR_SIZE = 24,
+	ANIMATION_SPEED = 0.3,
+}
+
+Constants.FACTIONS = {
+	DEFENDER_TEAMS = Maps.getTeamSet("Defenders"),
+	RAIDER_TEAMS = Maps.getTeamSet("Raiders"),
+	NEUTRAL_TEAMS = Maps.getTeamSet("Neutral"),
+}
+
+Constants.STATS = {
+	MIN_PLAYERS = if RunService:IsStudio() then 1 else 6,
+}
+
+Constants.CONTROL = {
+	GROUP_ID = Constants.GROUPS.VULTAR,
+	MIN_RANK = Constants.RANKS.SERGEANT,
+}
+
+Constants.ASSETS = {
+	TOOLS_ID = 108343605674626,
+}
+
+return Constants

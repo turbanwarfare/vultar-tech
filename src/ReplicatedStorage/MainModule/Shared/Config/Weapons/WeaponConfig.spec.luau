@@ -1,0 +1,133 @@
+--!nocheck
+--!strict
+
+local WeaponConfig = require(script.Parent.WeaponConfig)
+
+return function()
+	describe("WeaponConfig", function()
+		describe("Classes", function()
+			it("should have Assault class defined", function()
+				expect(WeaponConfig.Classes.Assault).to.be.ok()
+				expect(WeaponConfig.Classes.Assault.Tools).to.be.a("table")
+				expect(WeaponConfig.Classes.Assault.Animations).to.be.ok()
+			end)
+
+			it("should have Medic class defined", function()
+				expect(WeaponConfig.Classes.Medic).to.be.ok()
+				expect(WeaponConfig.Classes.Medic.Tools).to.be.a("table")
+				expect(WeaponConfig.Classes.Medic.Animations).to.be.ok()
+			end)
+
+			it("should have animation IDs for each class", function()
+				for className, config in WeaponConfig.Classes do
+					expect(config.Animations.Idle).to.be.a("string")
+					expect(config.Animations.Sprint).to.be.a("string")
+					expect(config.Animations.Crouch).to.be.a("string")
+					expect(config.Animations.Salute).to.be.a("string")
+				end
+			end)
+		end)
+
+		describe("getToolClass", function()
+			it("should return Assault for H-82", function()
+				expect(WeaponConfig.getToolClass("H-82")).to.equal("Assault")
+			end)
+
+			it("should return Assault for BR-16", function()
+				expect(WeaponConfig.getToolClass("BR-16")).to.equal("Assault")
+			end)
+
+			it("should return Medic for Medi+", function()
+				expect(WeaponConfig.getToolClass("Medi+")).to.equal("Medic")
+			end)
+
+			it("should return nil for unknown tools", function()
+				expect(WeaponConfig.getToolClass("UnknownTool")).to.equal(nil)
+			end)
+		end)
+
+		describe("getClassConfig", function()
+			it("should return config for valid class", function()
+				local config = WeaponConfig.getClassConfig("Assault")
+				expect(config).to.be.ok()
+				expect(config.Tools).to.be.a("table")
+				expect(config.Animations).to.be.ok()
+			end)
+
+			it("should return nil for invalid class", function()
+				local config = WeaponConfig.getClassConfig("InvalidClass" :: any)
+				expect(config).to.equal(nil)
+			end)
+		end)
+
+		describe("getToolConfig", function()
+			it("should return config for valid tool", function()
+				local config = WeaponConfig.getToolConfig("H-82")
+				expect(config).to.be.ok()
+				expect(config.Animations).to.be.ok()
+			end)
+
+			it("should return nil for unknown tool", function()
+				local config = WeaponConfig.getToolConfig("UnknownTool")
+				expect(config).to.equal(nil)
+			end)
+		end)
+
+		describe("isWeaponTool", function()
+			it("should return true for valid weapon tools", function()
+				expect(WeaponConfig.isWeaponTool("H-82")).to.equal(true)
+				expect(WeaponConfig.isWeaponTool("BR-16")).to.equal(true)
+				expect(WeaponConfig.isWeaponTool("Medi+")).to.equal(true)
+			end)
+
+			it("should return false for non-weapon tools", function()
+				expect(WeaponConfig.isWeaponTool("RandomTool")).to.equal(false)
+				expect(WeaponConfig.isWeaponTool("")).to.equal(false)
+			end)
+		end)
+
+		describe("getSpeeds", function()
+			it("should return default speeds for tools without custom speeds", function()
+				local speeds = WeaponConfig.getSpeeds("H-82")
+				expect(speeds.Walk).to.equal(WeaponConfig.DefaultSpeeds.Walk)
+				expect(speeds.Sprint).to.equal(WeaponConfig.DefaultSpeeds.Sprint)
+				expect(speeds.Crouch).to.equal(WeaponConfig.DefaultSpeeds.Crouch)
+			end)
+
+			it("should return default speeds for unknown tools", function()
+				local speeds = WeaponConfig.getSpeeds("UnknownTool")
+				expect(speeds).to.equal(WeaponConfig.DefaultSpeeds)
+			end)
+		end)
+
+		describe("DefaultSpeeds", function()
+			it("should have all required speed values", function()
+				expect(WeaponConfig.DefaultSpeeds.Walk).to.be.a("number")
+				expect(WeaponConfig.DefaultSpeeds.Sprint).to.be.a("number")
+				expect(WeaponConfig.DefaultSpeeds.Crouch).to.be.a("number")
+				expect(WeaponConfig.DefaultSpeeds.Zoom).to.be.a("number")
+			end)
+
+			it("should have sensible speed values", function()
+				expect(WeaponConfig.DefaultSpeeds.Sprint).to.be.ok()
+				expect(WeaponConfig.DefaultSpeeds.Sprint > WeaponConfig.DefaultSpeeds.Walk).to.equal(true)
+				expect(WeaponConfig.DefaultSpeeds.Crouch < WeaponConfig.DefaultSpeeds.Walk).to.equal(true)
+			end)
+		end)
+
+		describe("DefaultKeybinds", function()
+			it("should have all required keybinds", function()
+				expect(WeaponConfig.DefaultKeybinds.Sprint).to.be.ok()
+				expect(WeaponConfig.DefaultKeybinds.Crouch).to.be.ok()
+				expect(WeaponConfig.DefaultKeybinds.Salute).to.be.ok()
+			end)
+		end)
+
+		describe("AnimationFadeTime", function()
+			it("should be a positive number", function()
+				expect(WeaponConfig.AnimationFadeTime).to.be.a("number")
+				expect(WeaponConfig.AnimationFadeTime > 0).to.equal(true)
+			end)
+		end)
+	end)
+end

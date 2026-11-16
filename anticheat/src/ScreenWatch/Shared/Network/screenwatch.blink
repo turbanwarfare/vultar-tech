@@ -1,0 +1,239 @@
+option Casing = Pascal
+option RemoteScope = "VultarSW"
+option ServerOutput = "./Generated/Server.luau"
+option ClientOutput = "./Generated/Client.luau"
+option TypesOutput = "./Generated/Types.luau"
+
+type PlayerId = f64
+
+struct Vec2 {
+	X: f32,
+	Y: f32,
+}
+
+enum ScreenWatchMouseBehavior = { "Default", "LockCenter", "LockCurrentPosition" }
+
+struct ScreenWatchGhostEntry {
+	characterId: PlayerId,
+	cframe: CFrame,
+}
+
+struct ScreenWatchCameraPayload {
+	cframe: CFrame,
+	fov: f32,
+	viewportSize: Vec2,
+	mouseHit: vector,
+	timestamp: f64,
+	mouseBehavior: ScreenWatchMouseBehavior,
+	isSprinting: boolean?,
+	isCrouching: boolean?,
+	ping: u16?,
+	avgPing: u16?,
+	pingSpikes: u16?,
+	matchAccuracy: f32?,
+}
+
+struct ScreenWatchCursorPayload {
+	position: Vec2,
+	timestamp: f64,
+	icon: string?,
+}
+
+struct ScreenWatchGhostPayload {
+	ghosts: ScreenWatchGhostEntry[0..20],
+	timestamp: f64,
+}
+
+struct ScreenWatchInputPayload {
+	inputName: string,
+	isDown: boolean,
+	timestamp: f64,
+}
+
+struct ScreenWatchKeyHistoryPayload {
+	keyName: string,
+	isFlagged: boolean,
+	isDown: boolean,
+	timestamp: f64,
+	isFocusEvent: boolean?,
+	isSettingsEvent: boolean?,
+}
+
+struct ScreenWatchConfigPayload {
+	cameraSampleHz: f32,
+	cursorSampleHz: f32,
+	ghostSampleHz: f32,
+	ghostRenderDistance: f32,
+	ghostMaxCount: u8,
+}
+
+struct ScreenWatchStateSyncPayload {
+	targetUserId: PlayerId,
+	isWatching: boolean,
+	targetName: string?,
+}
+
+struct ScreenWatchHitPayload {
+	targetUserId: PlayerId,
+	victimId: PlayerId,
+	victimName: string,
+	damage: u16,
+	bodyPart: string,
+	isHeadshot: boolean,
+	weaponName: string,
+	timestamp: f64,
+	hitOffset: vector?,
+	targetTime: f64?,
+}
+
+struct ScreenWatchPreBufferChunk {
+	cameras: ScreenWatchCameraPayload[0..60],
+	cursors: ScreenWatchCursorPayload[0..60],
+	ghosts: ScreenWatchGhostPayload[0..60],
+}
+
+scope ScreenWatch {
+	event CameraStreamTarget {
+		From: Client,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: ScreenWatchCameraPayload,
+	}
+
+	event CameraStreamWatcher {
+		From: Server,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: ScreenWatchCameraPayload,
+	}
+
+	event CursorStreamTarget {
+		From: Client,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: ScreenWatchCursorPayload,
+	}
+
+	event CursorStreamWatcher {
+		From: Server,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: ScreenWatchCursorPayload,
+	}
+
+	event GhostStreamTarget {
+		From: Client,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: ScreenWatchGhostPayload,
+	}
+
+	event GhostStreamWatcher {
+		From: Server,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: ScreenWatchGhostPayload,
+	}
+
+	event InputEventTarget {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ScreenWatchInputPayload,
+	}
+
+	event InputEventWatcher {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ScreenWatchInputPayload,
+	}
+
+	event KeyHistoryEventTarget {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ScreenWatchKeyHistoryPayload,
+	}
+
+	event KeyHistoryEventWatcher {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ScreenWatchKeyHistoryPayload,
+	}
+
+	event SubscribeWatch {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: PlayerId,
+	}
+
+	event UnsubscribeWatch {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: PlayerId,
+	}
+
+	event StartCapture {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ScreenWatchConfigPayload,
+	}
+
+	event StopCapture {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+
+	event ClientReady {
+		From: Client,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+
+	event WatchStateSync {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ScreenWatchStateSyncPayload,
+	}
+
+	event HitEventWatcher {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ScreenWatchHitPayload,
+	}
+
+	event PreBufferStart {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: f32,
+	}
+
+	event PreBufferChunk {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+		Data: ScreenWatchPreBufferChunk,
+	}
+
+	event OpenSelectMenu {
+		From: Server,
+		Type: Reliable,
+		Call: SingleAsync,
+	}
+
+	event AimSample {
+		From: Client,
+		Type: Unreliable,
+		Call: SingleAsync,
+		Data: (f64, vector, vector),
+	}
+}
